@@ -12,6 +12,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sched.h>
+#include "signals.h"
 
 using namespace std;
 const std::string WHITESPACE = " \n\r\t\f\v";
@@ -123,7 +124,8 @@ void freeCmdArgs(char** args)
     delete[] args;
 }
 
-Command::Command(const char *cmd_line):cmdline(cmd_line){}
+Command::Command(const char *cmd_line):cmdline(cmd_line), is_timeout(false)
+{}
 
 
 BuiltInCommand::BuiltInCommand(const char *cmd_line) : Command(cmd_line)
@@ -782,7 +784,137 @@ void SetcoreCommand::execute()
         return;
     }
     cpu_set_t mask;
-    sched_setaffinity
+    CPU_ZERO(&mask);
+    CPU_SET(stoi(args[2]), &mask);
+    if(sched_setaffinity(job->pid, sizeof(mask), &mask) == -1)
+    {
+        perror("smash error: sched_setaffinity failed");
+        freeCmdArgs(args);
+        return;
+    }
+    freeCmdArgs(args);
+}
+
+GetFileTypeCommand::GetFileTypeCommand(const char *cmd_line) : BuiltInCommand(cmd_line)
+{}
+
+void GetFileTypeCommand::execute()
+{
+    int num_of_args;
+    char** args = getCmdArgs(cmdline,&num_of_args);
+    struct stat buffer;
+    int stat_res = stat(args[1], &buffer);
+    if(stat_res == -1)
+    {
+        perror("smash error: stat failed");
+        freeCmdArgs(args);
+        return;
+    }
+    bool file_exists = (stat_res == 0);
+    if(num_of_args != 2 || !file_exists)
+    {
+        perror("smash error: gettype: invalid arguments");
+        freeCmdArgs(args);
+        return;
+    }
+    if(S_ISDIR(buffer.st_mode))
+    {
+        cout <<  args[1] <<"'s type is \"directory\" and takes up " << buffer.st_size << " bytes" << endl;
+    }
+    else if(S_ISREG(buffer.st_mode))
+    {
+        cout <<  args[1] <<"'s type is \"regular file\" and takes up " << buffer.st_size << " bytes" << endl;
+    }
+    else if(S_ISCHR(buffer.st_mode))
+    {
+        cout <<  args[1] <<"'s type is \"character device\" and takes up " << buffer.st_size << " bytes" << endl;
+    }
+    else if(S_ISBLK(buffer.st_mode))
+    {
+        cout <<  args[1] <<"'s type is \"block device\" and takes up " << buffer.st_size << " bytes" << endl;
+    }
+    else if(S_ISFIFO(buffer.st_mode))
+    {
+        cout <<  args[1] <<"'s type is \"FIFO\" and takes up " << buffer.st_size << " bytes" << endl;
+    }
+    else if(S_ISLNK(buffer.st_mode))
+    {
+        cout <<  args[1] <<"'s type is \"symbolic link\" and takes up " << buffer.st_size << " bytes" << endl;
+    }
+    else if(S_ISSOCK(buffer.st_mode))
+    {
+        cout <<  args[1] <<"'s type is \"socket\" and takes up " << buffer.st_size << " bytes" << endl;
+    }
+    else //filetype doesn't match known types
+    {
+        perror("smash error: gettype: invalid arguments");
+        freeCmdArgs(args);
+        return;
+    }//success
+    freeCmdArgs(args);
+}
+
+ChmodCommand::ChmodCommand(const char *cmd_line) : BuiltInCommand(cmd_line)
+{}
+
+void ChmodCommand::execute()
+{
+    int num_of_args;
+    char** args = getCmdArgs(cmdline,&num_of_args);
+    struct stat buffer;
+    int stat_res = stat(args[2], &buffer);
+    if(stat_res == -1)
+    {
+        perror("smash error: stat failed");
+        freeCmdArgs(args);
+        return;
+    }
+    bool file_exists = (stat_res == 0);
+    if(num_of_args != 3 || !file_exists || !checkIfNumber(args[1]))
+    {
+        perror("smash error: gettype: invalid arguments");
+        freeCmdArgs(args);
+        return;
+    }
+    if(chmod(args[2], stoi(args[1])) == -1)
+    {
+        perror("smash error: chmod failed");
+        freeCmdArgs(args);
+        return;
+    }
+    freeCmdArgs(args);
+}
+
+SmallShell::Alarm::Alarm(time_t timestamp, time_t duration, pid_t pid) : timestamp(timestamp), duration(duration), pid(pid)
+{}
+
+TimeoutCommand::TimeoutCommand(const char *cmd_line, time_t timestamp, time_t duration, pid_t pid) : BuiltInCommand(cmd_line)
+{}
+
+void TimeoutCommand::execute()
+{
+    signal(SIGALRM, alarmHandler);
+    int num_of_args;
+    char** args = getCmdArgs(cmdline,&num_of_args);
+    if(num_of_args != 3 || !checkIfNumber(args[1]))
+    {
+        perror("smash error: timeout: invalid arguments");
+        freeCmdArgs(args);
+        return;
+    }
+    int i = 2;
+    string cmd;
+    while(args[i] != nullptr)
+    {
+        cmd.append(args[i]);
+        cmd.append(" ");
+        i++;
+    }
+    cmd = _trim(cmd);
+    Command* cmd_exe = SmallShell::getInstance().CreateCommand(cmd.c_str());
+    cmd_exe->is_timeout = true; //TODO - verify the significance of alarmlist: Why is it needed, for which types of processes, etc.
+    alarm(stoi(args[1]));
+    cmd_exe->execute();
 
 }
 

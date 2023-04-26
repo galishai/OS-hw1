@@ -15,6 +15,7 @@ class Command {
  public:
     const char* cmdline;
     pid_t pid;
+    bool is_timeout;
 
   Command(const char* cmd_line);
 
@@ -162,7 +163,7 @@ class TimeoutCommand : public BuiltInCommand {
 /* Bonus */
 // TODO: Add your data members
  public:
-  explicit TimeoutCommand(const char* cmd_line);
+  explicit TimeoutCommand(const char* cmd_line, time_t timestamp, time_t duration, pid_t pid);
   virtual ~TimeoutCommand() {}
   void execute() override;
 };
@@ -205,12 +206,22 @@ class SmallShell {
   // TODO: Add your data members
   SmallShell();
  public:
+    class Alarm
+    {
+    public:
+        time_t timestamp;
+        time_t duration;
+        pid_t pid;
+        Alarm(time_t timestamp, time_t duration, pid_t pid);
+    };
     char* prompt;
     pid_t shell_pid;
     pid_t fg_pid;
+    Command* cmd;
     const char* fg_cmdline;
     //int fg_job_id;
     JobsList jobs_list;
+    vector<Command> timeout_cmd_vec;
   Command *CreateCommand(const char* cmd_line);
   SmallShell(SmallShell const&)      = delete; // disable copy ctor
   void operator=(SmallShell const&)  = delete; // disable = operator
