@@ -124,7 +124,7 @@ void freeCmdArgs(char** args)
     delete[] args;
 }
 
-Command::Command(const char *cmd_line):cmdline(cmd_line), is_timeout(false)
+Command::Command(const char *cmd_line):cmdline(cmd_line), pid(-1), job_id(-1), is_timeout(false)
 {}
 
 
@@ -149,6 +149,7 @@ void ChangePromptCommand::execute(){
     if(num_of_args == 1)
     {
         shell.prompt = "smash";
+        shell.fg_job_id = -1;
     }
     else
     {
@@ -196,11 +197,27 @@ void ChangeDirCommand::execute()
     if(num_of_args > 2)
     {
         perror("smash error: cd: too many arguments"); //TODO
+        freeCmdArgs(args);
         return;
     }
     if(num_of_args == 1) //TODO
     {
         perror("smash error: cd: no arguments specified");
+        freeCmdArgs(args);
+        return;
+    }
+    char* curr_dir = (char*) malloc(_PC_PATH_MAX + 1);
+    if(!curr_dir)
+    {
+        perror("smash error: malloc failed");
+        freeCmdArgs(args);
+        return;
+    }
+    if(getcwd(curr_dir, _PC_PATH_MAX + 1) == nullptr)
+    {
+        perror("smash error: getcwd failed");
+        free(curr_dir);
+        freeCmdArgs(args);
         return;
     }
     if(strcmp(args[1],"-") == 0)
@@ -209,12 +226,37 @@ void ChangeDirCommand::execute()
         if(!(*last_wd))
         {
             perror("smash error: cd: OLDPWD not set");
+            free(curr_dir);
+            freeCmdArgs(args);
+            return;
         }
         if(chdir(*last_wd) == -1)
         {
             perror("smash error: chdir failed");
+            free(curr_dir);
+            freeCmdArgs(args);
+            return;
         }
+        free(*last_wd);
+        *last_wd = curr_dir;
+        freeCmdArgs(args);
+        return;
     }
+    else
+    {
+        if((chdir(args[1]) == -1))
+        {
+            perror("smash error: chdir failed");
+            freeCmdArgs(args);
+            return;
+        }
+        free(*last_wd);
+        last_wd = &curr_dir;
+        freeCmdArgs(args);
+        return;
+    }
+
+
 }
 
 JobsCommand::JobsCommand(const char *cmd_line, JobsList *jobs) : BuiltInCommand(cmd_line), jobs(jobs)
@@ -245,6 +287,7 @@ void ForegroundCommand::fgHelper(JobsList::JobEntry* job)
     smash.fg_cmdline = cmdline;
     //smash.fg_job_id = job->job_id;
     smash.fg_pid = job->pid;
+    smash.fg_job_id = job->job_id;
     jobs->removeJobById(job->job_id);
     if(waitpid(job->pid, nullptr, WUNTRACED) == -1) //TODO check if WUNTRACED is needed
     {
@@ -420,6 +463,7 @@ SmallShell::SmallShell() : jobs_list()
     prompt = "smash";
     fg_pid; //TODO to init or not?
     fg_cmdline; //
+    prev_wd = nullptr;
     //fg_job_id; //
 }
 
@@ -431,6 +475,25 @@ SmallShell::~SmallShell() {
 * Creates and returns a pointer to Command class which matches the given command line (cmd_line)
 */
 Command * SmallShell::CreateCommand(const char* cmd_line) {
+
+    char** args = getCmdArgs(cmd_line, nullptr);
+    string first_word = args[0];
+    if(first_word.compare("chprompt") || first_word.compare("chprompt&"))
+    {
+        return new ChmodCommand(cmd_line);
+    }
+    else if(first_word.compare("showpid") || first_word.compare("showpid&"))
+    {
+        return new ShowPidCommand(cmd_line);
+    }
+    else if(first_word.compare("pwd") || first_word.compare("pwd&"))
+    {
+        return new GetCurrDirCommand(cmd_line);
+    }
+    else if(first_word.compare("cd") || first_word.compare("cd&"))
+    {
+        return new ChangeDirCommand(cmd_line, &last_wd);
+    }
 	// For example:
 /*
   string cmd_s = _trim(string(cmd_line));
@@ -518,7 +581,7 @@ void ExternalCommand::execute()
             SmallShell &smash = SmallShell::getInstance() ;
             if (copy.find_last_not_of(' ') == '&') //if background command
             {
-                smash.jobs_list.addJob(this,pid,false);
+                smash.jobs_list.addJob(this,pid,job_id,false );
             }
             else
             {
@@ -919,8 +982,6 @@ void TimeoutCommand::execute()
 }
 
 
-
-
 //TODO JobsList Functions:
 
 JobsList::JobsList():list_of_jobs(), nextJobID(1)
@@ -930,11 +991,18 @@ JobsList::JobsList():list_of_jobs(), nextJobID(1)
 JobsList::JobEntry::JobEntry(bool stopped, int job_id, const char* cmd_line, pid_t pid):finished(false),stopped(stopped),job_id(job_id), time_added(-1), cmd_line(cmd_line), pid(pid)
 {}
 
-void JobsList::addJob(Command *cmd, pid_t pid, bool isStopped)
+void JobsList::addJob(Command *cmd, pid_t pid, int job_id, bool isStopped)
 {
     JobsList::removeFinishedJobs();
     JobEntry new_job(isStopped,nextJobID, cmd->cmdline, pid);
-    nextJobID++;
+    if(job_id == -1)
+    {
+        nextJobID++;
+    }
+    else
+    {
+        new_job.job_id = job_id;
+    }
     new_job.time_added = time(nullptr);
     list_of_jobs.push_back(new_job);
 
@@ -965,6 +1033,15 @@ void JobsList::printJobsList() //TODO check space validity
 void JobsList::removeFinishedJobs()
 {
     list_of_jobs.remove_if([](JobEntry job) {return job.finished;}); //TODO check validity
+    int max_job_id = 1;
+    for(auto& job : list_of_jobs)
+    {
+        if(job.job_id > max_job_id)
+        {
+            max_job_id = job.job_id;
+        }
+    }
+    this->nextJobID = max_job_id + 1;
 }
 
 JobsList::JobEntry* JobsList::getJobByID(int jobId)
@@ -1018,6 +1095,7 @@ void JobsList::killAllJobs()
             perror("smash error: kill failed");
             return;
         }
+        job.finished = true;
     }
 }
 

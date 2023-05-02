@@ -13,7 +13,7 @@ void ctrlZHandler(int sig_num) {
     {
         return;
     }
-    smash.jobs_list.addJob(smash.cmd,smash.fg_pid,true);
+    smash.jobs_list.addJob(smash.cmd,smash.fg_pid,smash.cmd->job_id,true);
     kill(smash.fg_pid, SIGSTOP);
     cout << "smash: process " << smash.fg_pid <<" was stopped" << endl;
     smash.fg_pid = -1;
@@ -28,7 +28,11 @@ void ctrlCHandler(int sig_num) {
     {
         return;
     }
-    kill(smash.fg_pid, SIGKILL);
+    if(kill(smash.fg_pid, SIGKILL) == -1)
+    {
+        perror("smash: kill failed");
+        return;
+    }
     cout << "smash: process " << smash.fg_pid <<" was killed" << endl;
     smash.fg_pid = -1;
     smash.fg_cmdline = "";
@@ -36,6 +40,15 @@ void ctrlCHandler(int sig_num) {
 
 void alarmHandler(int sig_num) {
   // TODO: Add your implementation
+  SmallShell& smash = SmallShell::getInstance();
+  if(kill(smash.fg_pid, SIGKILL) == -1)
+  {
+      perror("smash: kill failed");
+      return;
+  }
+    cout << "smash: got an alarm" << endl;
+    cout << "smash: " << smash.fg_cmdline << " timed out!" << endl;
+
 
 }
 

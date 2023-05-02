@@ -15,7 +15,9 @@ class Command {
  public:
     const char* cmdline;
     pid_t pid;
+    int job_id;
     bool is_timeout;
+
 
   Command(const char* cmd_line);
 
@@ -67,6 +69,7 @@ class ChangePromptCommand : public BuiltInCommand
 
 class ChangeDirCommand : public BuiltInCommand {
 // TODO: Add your data members public:
+public:
 char** last_wd;
   ChangeDirCommand(const char* cmd_line, char** plastPwd);
   virtual ~ChangeDirCommand() {}
@@ -119,7 +122,7 @@ class JobsList {
  public:
   JobsList();
   ~JobsList();
-  void addJob(Command* cmd, pid_t pid, bool isStopped = false);
+  void addJob(Command* cmd, pid_t pid, int job_id, bool isStopped = false);
   void printJobsList();
   void killAllJobs();
   void removeFinishedJobs();
@@ -217,6 +220,7 @@ class SmallShell {
     char* prompt;
     pid_t shell_pid;
     pid_t fg_pid;
+    char* last_wd;
     Command* cmd;
     const char* fg_cmdline;
     //int fg_job_id;
