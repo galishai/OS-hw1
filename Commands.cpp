@@ -681,6 +681,7 @@ void ExternalCommand::execute()
                     exit(-1);
                 }
             }
+            exit(0);
         }
         else //parent
         {
@@ -808,8 +809,9 @@ PipeCommand::PipeCommand(const char *cmd_line) : Command(cmd_line)
 
 bool closePipe(int fd[])
 {
-    if(close(fd[0]) == -1 || close(fd[1] == -1))
+    if(close(fd[0]) == -1 || close(fd[1]) == -1)
     {
+        perror("smash error: close failed");
         return false;
     }
     return true;
@@ -850,14 +852,11 @@ void PipeCommand::execute()
             perror("smash error: pipe failed");
             exit(1);
         }
-        int pid1 = fork();
+        pid_t pid1 = fork();
         if(pid1 == -1)
         {
             perror("smash error: fork failed");
-            if(!closePipe(fd))
-            {
-                perror("smash error: close failed");
-            }
+            closePipe(fd);
             exit(1);
         }
         if(pid1 == 0)
@@ -865,41 +864,29 @@ void PipeCommand::execute()
             if(setpgrp() == -1)
             {
                 perror("smash error: setpgrp failed");
-                if(!closePipe(fd))
-                {
-                    perror("smash error: close failed");
-                }
+                closePipe(fd);
                 exit(1);
             }
             if(dup2(fd[1],flag) == -1)
             {
                 perror("smash error: dup2 failed");
-                if(!closePipe(fd))
-                {
-                    perror("smash error: close failed");
-                }
+                closePipe(fd);
                 exit(1);
             }
-            Command* cmd1_exe = smash.CreateCommand(cmd1.c_str());
-            cmd1_exe->execute();
-            if(!_isBackgroundComamnd(cmd1.c_str()))
-            {
-                delete cmd1_exe;
-            }
+            closePipe(fd);
+            smash.executeCommand(cmd1.c_str());
+            exit(0);
         }
             /*if (waitpid(pid1, nullptr, WUNTRACED) == -1) //TODO where to put waitpids
             {
                 perror("smash error: waitpid failed");
                 return;
             }*/
-        int pid2 = fork();
+        pid_t pid2 = fork();
         if(pid2 == -1)
         {
             perror("smash error: fork failed");
-            if(!closePipe(fd))
-            {
-                perror("smash error: close failed");
-            }
+            closePipe(fd);
             exit(1);
         }
 
@@ -908,32 +895,20 @@ void PipeCommand::execute()
             if(setpgrp() == -1)
             {
                 perror("smash error: setpgrp failed");
-                if(!closePipe(fd))
-                {
-                    perror("smash error: close failed");
-                }
+                closePipe(fd);
                 exit(1);
             }
             if(dup2(fd[0],0) == -1)
             {
                 perror("smash error: dup2 failed");
-                if(!closePipe(fd))
-                {
-                    perror("smash error: close failed");
-                }
+                closePipe(fd);
                 exit(1);
             }
-            Command* cmd2_exe = smash.CreateCommand(cmd2.c_str());
-            cmd2_exe->execute();
-            if(!_isBackgroundComamnd(cmd2.c_str()))
-            {
-                delete cmd2_exe;
-            }
+            closePipe(fd);
+            smash.executeCommand(cmd2.c_str());
+            exit(0);
         }
-        if(!closePipe(fd))
-        {
-            perror("smash error: close failed");
-        }
+        closePipe(fd);
         if (waitpid(pid1, nullptr, WUNTRACED) == -1) //TODO where to put waitpids
         {
             perror("smash error: waitpid failed");
@@ -1059,8 +1034,7 @@ void ChmodCommand::execute()
     int num_of_args = -1;
     char** args = getCmdArgs(cmdline,&num_of_args);
     struct stat buffer;
-    string str = args[1];
-    int stat_res = stat(args[1], &buffer);
+    int stat_res = stat(args[2], &buffer);
     if(stat_res == -1)
     {
         cerr << "smash error: stat failed" << endl;
@@ -1135,7 +1109,7 @@ void TimeoutCommand::execute()
 {
     int num_of_args;
     char** args = getCmdArgs(cmdline,&num_of_args);
-    if(num_of_args != 3 || !checkIfNumber(args[1]))
+    if(!checkIfNumber(args[1]))
     {
         perror("smash error: timeout: invalid arguments");
         freeCmdArgs(args);
@@ -1216,23 +1190,12 @@ void JobsList::printJobsList() //TODO check space validity
 
 void JobsList::removeFinishedJobs()
 {
-    //SmallShell& smash = SmallShell::getInstance();
-    for(auto& job : list_of_jobs)
-    {
-        if (job.pid == waitpid(job.pid, NULL, WNOHANG))
-        {
+    for (auto &job: list_of_jobs) {
+        if (job.pid == waitpid(job.pid, NULL, WNOHANG)) {
             job.finished = true;
         }
     }
-    /*for(auto job = list_of_jobs.begin(); job != list_of_jobs.end(); job++)
-    {
-        if(job->finished)
-        {
-            list_of_jobs.erase(job);
-            job--;
-        }
-    }*/
-    list_of_jobs.remove_if([](JobEntry job) {return job.finished;}); //TODO check validity
+    list_of_jobs.remove_if([](JobEntry job) { return job.finished; }); //TODO check validity
     int max_job_id = 1;
     if (list_of_jobs.empty())
     {
