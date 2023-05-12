@@ -35,6 +35,7 @@ class BuiltInCommand : public Command {
 
 class ExternalCommand : public Command {
  public:
+    bool failed;
   ExternalCommand(const char* cmd_line);
 
   virtual ~ExternalCommand() {}
@@ -62,6 +63,7 @@ class RedirectionCommand : public Command {
 
 class ChangePromptCommand : public BuiltInCommand
 {
+public:
     explicit ChangePromptCommand(const char* cmd_line);
     virtual ~ChangePromptCommand(){}
     void execute() override;
@@ -70,7 +72,7 @@ class ChangePromptCommand : public BuiltInCommand
 class ChangeDirCommand : public BuiltInCommand {
 // TODO: Add your data members public:
 public:
-char** last_wd;
+//char** last_wd;
   ChangeDirCommand(const char* cmd_line, char** plastPwd);
   virtual ~ChangeDirCommand() {}
   void execute() override;
@@ -119,10 +121,9 @@ class JobsList {
  // TODO: Add your data members
  list<JobEntry> list_of_jobs;
  int nextJobID;
- public:
   JobsList();
   ~JobsList();
-  void addJob(Command* cmd, pid_t pid, int job_id, bool isStopped = false);
+  void addJob(const char* cmd_line, pid_t pid, int job_id, bool isStopped = false);
   void printJobsList();
   void killAllJobs();
   void removeFinishedJobs();
@@ -149,7 +150,7 @@ class ForegroundCommand : public BuiltInCommand {
   ForegroundCommand(const char* cmd_line, JobsList* jobs);
   virtual ~ForegroundCommand() {}
   void execute() override;
-  void fgHelper(JobsList::JobEntry* job);
+  void fgHelper(JobsList::JobEntry* job, char* cmdline_copy);
 };
 
 class BackgroundCommand : public BuiltInCommand {
@@ -159,14 +160,14 @@ class BackgroundCommand : public BuiltInCommand {
   BackgroundCommand(const char* cmd_line, JobsList* jobs);
   virtual ~BackgroundCommand() {}
   void execute() override;
-    void bgHelper(JobsList::JobEntry* job);
+    void bgHelper(JobsList::JobEntry* job, char* cmdline_copy);
 };
 
 class TimeoutCommand : public BuiltInCommand {
 /* Bonus */
 // TODO: Add your data members
  public:
-  explicit TimeoutCommand(const char* cmd_line, time_t timestamp, time_t duration, pid_t pid);
+  explicit TimeoutCommand(const char* cmd_line);
   virtual ~TimeoutCommand() {}
   void execute() override;
 };
@@ -204,28 +205,40 @@ class KillCommand : public BuiltInCommand {
   void execute() override;
 };
 
+class AlarmList
+{
+public:
+    class Alarm
+    {
+    public:
+        const char* cmd_line;
+        time_t timestamp;
+        time_t duration;
+        pid_t pid;
+        bool is_fg;
+        Alarm(const char* cmd_line, time_t timestamp, time_t duration, pid_t pid);
+    };
+    list <Alarm*> alarm_list;
+    void addAlarm (Alarm* new_alarm);
+    AlarmList();
+    void endAlarms();
+};
+
 class SmallShell {
  private:
   // TODO: Add your data members
   SmallShell();
  public:
-    class Alarm
-    {
-    public:
-        time_t timestamp;
-        time_t duration;
-        pid_t pid;
-        Alarm(time_t timestamp, time_t duration, pid_t pid);
-    };
-    char* prompt;
+    string prompt;
     pid_t shell_pid;
     pid_t fg_pid;
     char* last_wd;
-    Command* cmd;
+    //Command* fg_cmd;
+    //bool fg_timeout;
     const char* fg_cmdline;
-    //int fg_job_id;
+    int fg_job_id;
     JobsList jobs_list;
-    vector<Command> timeout_cmd_vec;
+    AlarmList alarm_list;
   Command *CreateCommand(const char* cmd_line);
   SmallShell(SmallShell const&)      = delete; // disable copy ctor
   void operator=(SmallShell const&)  = delete; // disable = operator
@@ -236,7 +249,7 @@ class SmallShell {
     return instance;
   }
   ~SmallShell();
-  void executeCommand(const char* cmd_line);
+  void executeCommand(const char* cmd_line/*, bool is_timeout*/);
   // TODO: add extra methods as needed
 };
 
