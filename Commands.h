@@ -218,7 +218,7 @@ public:
         time_t duration;
         pid_t pid;
         bool is_fg;
-        Alarm(const char* cmd_line, time_t timestamp, time_t duration, pid_t pid);
+        Alarm(const char* cmd_line, time_t timestamp, time_t duration, pid_t pid, bool is_fg);
     };
     list <Alarm*> alarm_list;
     void addAlarm (Alarm* new_alarm);
@@ -241,6 +241,7 @@ class SmallShell {
     int fg_job_id;
     JobsList jobs_list;
     AlarmList alarm_list;
+    bool got_alarm;
   Command *CreateCommand(const char* cmd_line, bool active_alarm, time_t alarm_duration = -1);
   SmallShell(SmallShell const&)      = delete; // disable copy ctor
   void operator=(SmallShell const&)  = delete; // disable = operator
