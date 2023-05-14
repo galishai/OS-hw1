@@ -29,9 +29,10 @@ int main(int argc, char* argv[]) {
         std::cout << smash.prompt << "> ";
         std::string cmd_line;
         std::getline(std::cin, cmd_line);
+        //cout << "main pid: " << getpid() << endl;
         if(cmd_line !="")
         {
-            smash.executeCommand(cmd_line.c_str());
+            smash.executeCommand(cmd_line.c_str(), false);
         }
     }
     return 0;
