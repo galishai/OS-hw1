@@ -256,7 +256,7 @@ void ChangeDirCommand::execute()
     }
     if(num_of_args == 1) //TODO
     {
-        perror("smash error: cd: no arguments specified");
+        cerr <<"smash error: cd: no arguments specified" << endl;
         freeCmdArgs(args);
         return;
     }
@@ -866,7 +866,7 @@ void RedirectionCommand::execute()
     int flag;
     if(pos1 == string::npos && pos2 == string::npos)
     {
-        perror("Invalid format");
+        cerr <<"Invalid format" << endl;
         return;
     }
     string cmd;
@@ -974,7 +974,7 @@ void PipeCommand::execute()
     int flag;
     if(pos1 == string::npos && pos2 == string::npos)
     {
-        perror("Invalid format");
+        cerr <<"Invalid format" << endl;
         return;
     }
     string cmd1;
@@ -1155,7 +1155,7 @@ void GetFileTypeCommand::execute()
     bool file_exists = (stat_res == 0);
     if(num_of_args != 2 || !file_exists)
     {
-        cerr << "smash error: gettype: invalid arguments" << endl;
+        cerr << "smash error: getfiletype: invalid arguments" << endl;
         freeCmdArgs(args);
         return;
     }
@@ -1189,7 +1189,7 @@ void GetFileTypeCommand::execute()
     }
     else //filetype doesn't match known types
     {
-        perror("smash error: gettype: invalid arguments");
+        cerr <<"smash error: getfiletype: invalid arguments" << endl;
         freeCmdArgs(args);
         return;
     }//success
@@ -1225,7 +1225,7 @@ void ChmodCommand::execute()
     bool file_exists = (stat_res == 0);
     if(num_of_args != 3 || !file_exists || !checkIfNumber(args[1]))
     {
-        perror("smash error: gettype: invalid arguments");
+        cerr << "smash error: chmod: invalid arguments" << endl;
         freeCmdArgs(args);
         return;
     }
