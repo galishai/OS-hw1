@@ -235,9 +235,9 @@ ChangeDirCommand::ChangeDirCommand(const char *cmd_line, char **plastPwd, bool a
 
 void ChangeDirCommand::execute()
 {
+    SmallShell &smash = SmallShell::getInstance();
     int num_of_args;
     char** args = getCmdArgs(cmdline,&num_of_args);
-    SmallShell &smash = SmallShell::getInstance();
     if(active_alarm)
     {
         bool is_fg = true;

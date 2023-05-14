@@ -50,27 +50,9 @@ void ctrlCHandler(int sig_num) {
 }
 
 void alarmHandler(int sig_num) {
-  // TODO: Add your implementation
-  cout << "smash: got an alarm" << endl;
-  SmallShell& smash = SmallShell::getInstance();
-  /*if(smash.fg_cmdline != "" && smash.fg_timeout)
-  {
-      if(kill(smash.fg_pid, SIGINT) == -1)
-      {
-          perror("smash error: kill failed");
-      }
-      smash.fg_pid = -1;
-      smash.fg_timeout = false;
-      smash.fg_job_id = -1;
-      smash.fg_cmdline = "";
-  }*/
-  smash.alarm_list.endAlarms();
-  /*if(kill(smash.fg_pid, SIGKILL) == -1)
-  {
-      perror("smash: kill failed");
-      return;
-  }
+    // TODO: Add your implementation
     cout << "smash: got an alarm" << endl;
-    cout << "smash: " << smash.fg_cmdline << " timed out!" << endl;*/
+    SmallShell &smash = SmallShell::getInstance();
+    smash.alarm_list.endAlarms();
 }
 
