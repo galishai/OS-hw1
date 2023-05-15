@@ -165,7 +165,7 @@ class BackgroundCommand : public BuiltInCommand {
     void bgHelper(JobsList::JobEntry* job, char* cmdline_copy);
 };
 
-class TimeoutCommand : public BuiltInCommand {
+class TimeoutCommand : public Command {
 /* Bonus */
 // TODO: Add your data members
  public:
@@ -174,7 +174,7 @@ class TimeoutCommand : public BuiltInCommand {
   void execute() override;
 };
 
-class ChmodCommand : public BuiltInCommand {
+class ChmodCommand: public Command {
   // TODO: Add your data members
  public:
   ChmodCommand(const char* cmd_line, bool active_alarm = false, time_t alarm_duration = -1);
@@ -182,7 +182,7 @@ class ChmodCommand : public BuiltInCommand {
   void execute() override;
 };
 
-class GetFileTypeCommand : public BuiltInCommand {
+class GetFileTypeCommand : public Command {
   // TODO: Add your data members
  public:
   GetFileTypeCommand(const char* cmd_line, bool active_alarm = false, time_t alarm_duration = -1);
@@ -190,7 +190,7 @@ class GetFileTypeCommand : public BuiltInCommand {
   void execute() override;
 };
 
-class SetcoreCommand : public BuiltInCommand {
+class SetcoreCommand : public Command {
   // TODO: Add your data members
  public:
   SetcoreCommand(const char* cmd_line, bool active_alarm = false, time_t alarm_duration = -1);
@@ -219,7 +219,7 @@ public:
         pid_t pid;
         bool is_fg;
         bool is_builtin;
-        Alarm(const char* cmd_line, time_t timestamp, time_t duration, pid_t pid, bool is_fg, bool is_builtin);
+        Alarm(const char* cmd_line, time_t timestamp, time_t duration, pid_t pid, bool is_fg);
     };
     list <Alarm*> alarm_list;
     void addAlarm (Alarm* new_alarm);
@@ -242,8 +242,6 @@ class SmallShell {
     int fg_job_id;
     JobsList jobs_list;
     AlarmList alarm_list;
-    bool active_alarm;
-    time_t alarm_duration;
   Command *CreateCommand(const char* cmd_line, bool active_alarm, time_t alarm_duration = -1);
   SmallShell(SmallShell const&)      = delete; // disable copy ctor
   void operator=(SmallShell const&)  = delete; // disable = operator

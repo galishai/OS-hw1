@@ -6,33 +6,17 @@
 using namespace std;
 
 void ctrlZHandler(int sig_num) {
-	// TODO: Add your implementation
+    // TODO: Add your implementation
     cout << "smash: got ctrl-Z" << endl;
     SmallShell& smash = SmallShell::getInstance();
     if(smash.fg_pid == -1)
     {
         return;
     }
-    string t_string = "timeout " + to_string(smash.alarm_duration) + " ";
-    char* cmdline_copy;
-    if(smash.active_alarm)
+    char* cmdline_copy = (char*) malloc(sizeof (cmdline_copy) * string(smash.fg_cmdline).length() + 1);
+    for (size_t i=0; i<string(smash.fg_cmdline).length() + 1; i++)
     {
-        cmdline_copy = (char*) malloc(sizeof (cmdline_copy) * (string(smash.fg_cmdline).length() + t_string.length()) + 1);
-        for (size_t i = 0; i < string(smash.fg_cmdline).length() + t_string.length() + 1; i++) {
-            if(i < t_string.length())
-            {
-                cmdline_copy[i] = t_string[i];
-            }
-            else {
-                cmdline_copy[i] = smash.fg_cmdline[i - t_string.length()];
-            }
-        }
-    }
-    else {
-        cmdline_copy = (char *) malloc(sizeof(cmdline_copy) * string(smash.fg_cmdline).length() + 1);
-        for (size_t i = 0; i < string(smash.fg_cmdline).length() + 1; i++) {
-            cmdline_copy[i] = smash.fg_cmdline[i];
-        }
+        cmdline_copy[i] = smash.fg_cmdline[i];
     }
     smash.jobs_list.addJob(cmdline_copy,smash.fg_pid,smash.fg_job_id,true);
     if(kill(smash.fg_pid, SIGSTOP) == -1)
@@ -47,7 +31,7 @@ void ctrlZHandler(int sig_num) {
 }
 
 void ctrlCHandler(int sig_num) {
-  // TODO: Add your implementation
+    // TODO: Add your implementation
     cout << "smash: got ctrl-C" << endl;
     SmallShell& smash = SmallShell::getInstance();
     if(smash.fg_pid == -1)
@@ -71,4 +55,3 @@ void alarmHandler(int sig_num) {
     SmallShell &smash = SmallShell::getInstance();
     smash.alarm_list.endAlarms();
 }
-
