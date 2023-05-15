@@ -1225,7 +1225,7 @@ void ChmodCommand::execute()
     char** args = getCmdArgs(cmdline,&num_of_args);
     struct stat buffer;
     int stat_res = stat(args[2], &buffer);
-    if(num_of_args != 3 || !checkIfNumber(args[1]))
+    if(num_of_args != 3 || !checkIfNumber(args[1]) || args[1][0] == '-')
     {
         cerr << "smash error: chmod: invalid arguments" << endl;
         freeCmdArgs(args);
