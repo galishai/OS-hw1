@@ -168,7 +168,7 @@ void ChangePromptCommand::execute(){
         {
             is_fg = false;
         }
-        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg);
+        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg, true);
         shell.alarm_list.addAlarm(cmd_alarm);
     }
     int num_of_args;
@@ -203,7 +203,7 @@ void ShowPidCommand::execute()
         {
             is_fg = false;
         }
-        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg);
+        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg, true);
         smash.alarm_list.addAlarm(cmd_alarm);
     }
     cout << "smash pid is " << smash.shell_pid << endl;
@@ -222,7 +222,7 @@ void GetCurrDirCommand::execute()
         {
             is_fg = false;
         }
-        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg);
+        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg, true);
         smash.alarm_list.addAlarm(cmd_alarm);
     }
     char* buffer = new char[WD_MAX_LENGTH+1];
@@ -251,7 +251,7 @@ void ChangeDirCommand::execute()
         {
             is_fg = false;
         }
-        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg);
+        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg, true);
         smash.alarm_list.addAlarm(cmd_alarm);
     }
     if(num_of_args > 2)
@@ -334,7 +334,7 @@ void JobsCommand::execute()
         {
             is_fg = false;
         }
-        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(),is_fg);
+        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(),is_fg, true);
         smash.alarm_list.addAlarm(cmd_alarm);
     }
     jobs->printJobsList();
@@ -379,7 +379,7 @@ void ForegroundCommand::execute()
         {
             is_fg = false;
         }
-        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg);
+        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg, true);
         smash.alarm_list.addAlarm(cmd_alarm);
     }
     int num_of_args;
@@ -455,7 +455,7 @@ void BackgroundCommand::execute()
         {
             is_fg = false;
         }
-        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg);
+        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg, true);
         smash.alarm_list.addAlarm(cmd_alarm);
     }
     int num_of_args;
@@ -527,7 +527,7 @@ void QuitCommand::execute()
         {
             is_fg = false;
         }
-        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg);
+        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg, true);
         smash.alarm_list.addAlarm(cmd_alarm);
     }
     int num_of_args;
@@ -556,7 +556,7 @@ void KillCommand::execute()
         {
             is_fg = false;
         }
-        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg);
+        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg, true);
         smash.alarm_list.addAlarm(cmd_alarm);
     }
     int num_of_args;
@@ -797,7 +797,7 @@ void ExternalCommand::execute()
             {
                 is_fg = false;
             }
-            AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,pid, is_fg);
+            AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,pid, is_fg, false);
             possible_alarm = cmd_alarm;
             smash.alarm_list.addAlarm(cmd_alarm);
         }
@@ -863,7 +863,7 @@ void RedirectionCommand::execute()
         {
             is_fg = false;
         }
-        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg);
+        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg, false);
         smash.alarm_list.addAlarm(cmd_alarm);
     }
     size_t pos1 = string (cmdline).find('>');
@@ -971,7 +971,7 @@ void PipeCommand::execute()
         {
             is_fg = false;
         }
-        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg);
+        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg, false);
         smash.alarm_list.addAlarm(cmd_alarm);
     }
     size_t pos1 = string (cmdline).find('|');
@@ -1088,7 +1088,7 @@ void SetcoreCommand::execute()
         {
             is_fg = false;
         }
-        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg);
+        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg, true);
         smash.alarm_list.addAlarm(cmd_alarm);
     }
     int num_of_args;
@@ -1144,7 +1144,7 @@ void GetFileTypeCommand::execute()
         {
             is_fg = false;
         }
-        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg);
+        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg, true);
         smash.alarm_list.addAlarm(cmd_alarm);
     }
     int num_of_args;
@@ -1214,7 +1214,7 @@ void ChmodCommand::execute()
         {
             is_fg = false;
         }
-        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg);
+        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg, true);
         smash.alarm_list.addAlarm(cmd_alarm);
     }
     int num_of_args = -1;
@@ -1246,7 +1246,7 @@ void ChmodCommand::execute()
 AlarmList::AlarmList() : alarm_list()
 {}
 
-AlarmList::Alarm::Alarm(const char *cmd_line, time_t timestamp, time_t duration, pid_t pid, bool is_fg) : cmd_line(cmd_line), timestamp(timestamp), duration(duration), pid(pid), is_fg(is_fg)
+AlarmList::Alarm::Alarm(const char *cmd_line, time_t timestamp, time_t duration, pid_t pid, bool is_fg, bool is_builtin) : cmd_line(cmd_line), timestamp(timestamp), duration(duration), pid(pid), is_fg(is_fg), is_builtin(is_builtin)
 {}
 
 void AlarmList::addAlarm (AlarmList::Alarm* new_alarm)
@@ -1273,7 +1273,7 @@ void AlarmList::endAlarms()
         {
             //cout << "shell pid: " << smash.fg_pid << endl;
             //cout << "timed out pid: " << alarm.operator*()->pid << endl;
-            if(smash.jobs_list.getJobByPID(alarm.operator*()->pid) || alarm.operator*()->is_fg)
+            if((smash.jobs_list.getJobByPID(alarm.operator*()->pid) || alarm.operator*()->is_fg) && !alarm.operator*()->is_builtin)
             {
                 cout << "smash: timeout " << alarm.operator*()->duration <<" " << alarm.operator*()->cmd_line << " timed out!" << endl; //TODO
                 if (kill(alarm.operator*()->pid, SIGKILL) == -1) {

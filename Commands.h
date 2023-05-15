@@ -219,7 +219,7 @@ public:
         pid_t pid;
         bool is_fg;
         bool is_builtin;
-        Alarm(const char* cmd_line, time_t timestamp, time_t duration, pid_t pid, bool is_fg);
+        Alarm(const char* cmd_line, time_t timestamp, time_t duration, pid_t pid, bool is_fg, bool is_builtin);
     };
     list <Alarm*> alarm_list;
     void addAlarm (Alarm* new_alarm);
