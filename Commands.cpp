@@ -145,7 +145,13 @@ Command::~Command() {}
 
 BuiltInCommand::BuiltInCommand(const char *cmd_line, bool active_alarm, time_t alarm_duration) : Command(cmd_line, active_alarm, alarm_duration)
 {
-
+    char* cmd_no_bg = (char*) malloc(sizeof (cmd_no_bg) * string(cmdline).length() + 1);
+    for (size_t i=0; i<string(cmdline).length() + 1; i++)
+    {
+        cmd_no_bg[i] = cmdline[i];
+    }
+    _removeBackgroundSign(cmd_no_bg);
+    cmdline = cmd_no_bg;
 }
 
 ChangePromptCommand::ChangePromptCommand(const char *cmd_line, bool active_alarm, time_t alarm_duration) : BuiltInCommand(cmd_line, active_alarm, alarm_duration)
@@ -162,7 +168,7 @@ void ChangePromptCommand::execute(){
         {
             is_fg = false;
         }
-        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg);
+        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg, true);
         shell.alarm_list.addAlarm(cmd_alarm);
     }
     int num_of_args;
@@ -197,7 +203,7 @@ void ShowPidCommand::execute()
         {
             is_fg = false;
         }
-        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg);
+        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg, true);
         smash.alarm_list.addAlarm(cmd_alarm);
     }
     cout << "smash pid is " << smash.shell_pid << endl;
@@ -216,7 +222,7 @@ void GetCurrDirCommand::execute()
         {
             is_fg = false;
         }
-        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg);
+        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg, true);
         smash.alarm_list.addAlarm(cmd_alarm);
     }
     char* buffer = new char[WD_MAX_LENGTH+1];
@@ -245,7 +251,7 @@ void ChangeDirCommand::execute()
         {
             is_fg = false;
         }
-        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg);
+        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg, true);
         smash.alarm_list.addAlarm(cmd_alarm);
     }
     if(num_of_args > 2)
@@ -328,7 +334,7 @@ void JobsCommand::execute()
         {
             is_fg = false;
         }
-        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(),is_fg);
+        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(),is_fg, true);
         smash.alarm_list.addAlarm(cmd_alarm);
     }
     jobs->printJobsList();
@@ -373,7 +379,7 @@ void ForegroundCommand::execute()
         {
             is_fg = false;
         }
-        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg);
+        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg, true);
         smash.alarm_list.addAlarm(cmd_alarm);
     }
     int num_of_args;
@@ -449,7 +455,7 @@ void BackgroundCommand::execute()
         {
             is_fg = false;
         }
-        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg);
+        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg, true);
         smash.alarm_list.addAlarm(cmd_alarm);
     }
     int num_of_args;
@@ -521,7 +527,7 @@ void QuitCommand::execute()
         {
             is_fg = false;
         }
-        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg);
+        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg, true);
         smash.alarm_list.addAlarm(cmd_alarm);
     }
     int num_of_args;
@@ -550,7 +556,7 @@ void KillCommand::execute()
         {
             is_fg = false;
         }
-        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg);
+        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg, true);
         smash.alarm_list.addAlarm(cmd_alarm);
     }
     int num_of_args;
@@ -606,7 +612,8 @@ SmallShell::SmallShell() : jobs_list()
     fg_cmdline = ""; //
     last_wd = nullptr;
     fg_job_id = -1; //
-    got_alarm = false;
+    active_alarm = false;
+    alarm_duration = -1;
 }
 
 SmallShell::~SmallShell() {
@@ -670,7 +677,7 @@ Command * SmallShell::CreateCommand(const char* cmd_line, bool active_alarm, tim
     {
         return new SetcoreCommand(cmd_line, active_alarm, alarm_duration);
     }
-    else if(!first_word.compare("getfileinfo") || !first_word.compare("getfileinfo&"))
+    else if(!first_word.compare("getfiletype") || !first_word.compare("getfiletype&"))
     {
         return new GetFileTypeCommand(cmd_line, active_alarm, alarm_duration);
     }
@@ -747,8 +754,10 @@ void ExternalCommand::execute()
     char bash[] = "/bin/bash";
     char flag[] = "-c";
     char* complex_args[] = {bash, flag, const_cast<char *>(cmd_no_bg), nullptr};
-    pid_t pid = fork();
     SmallShell &smash = SmallShell::getInstance();
+    smash.active_alarm = active_alarm;
+    smash.alarm_duration = alarm_duration;
+    pid_t pid = fork();
     if(pid == -1)
     {
         perror("smash error: fork failed");
@@ -792,7 +801,7 @@ void ExternalCommand::execute()
                 {
                     is_fg = false;
                 }
-                AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,pid, is_fg);
+                AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,pid, is_fg, false);
                 possible_alarm = cmd_alarm;
                 smash.alarm_list.addAlarm(cmd_alarm);
             }
@@ -858,7 +867,7 @@ void RedirectionCommand::execute()
         {
             is_fg = false;
         }
-        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg);
+        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg, false);
         smash.alarm_list.addAlarm(cmd_alarm);
     }
     size_t pos1 = string (cmdline).find('>');
@@ -966,7 +975,7 @@ void PipeCommand::execute()
         {
             is_fg = false;
         }
-        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg);
+        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg, false);
         smash.alarm_list.addAlarm(cmd_alarm);
     }
     size_t pos1 = string (cmdline).find('|');
@@ -1083,7 +1092,7 @@ void SetcoreCommand::execute()
         {
             is_fg = false;
         }
-        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg);
+        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg, true);
         smash.alarm_list.addAlarm(cmd_alarm);
     }
     int num_of_args;
@@ -1139,26 +1148,26 @@ void GetFileTypeCommand::execute()
         {
             is_fg = false;
         }
-        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg);
+        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg, true);
         smash.alarm_list.addAlarm(cmd_alarm);
     }
     int num_of_args;
     char** args = getCmdArgs(cmdline,&num_of_args);
+    if(num_of_args != 2)
+    {
+        cerr << "smash error: getfiletype: invalid arguments" << endl;
+        freeCmdArgs(args);
+        return;
+    }
     struct stat buffer;
-    int stat_res = stat(args[1], &buffer);
+    int stat_res = lstat(args[1], &buffer);
     if(stat_res == -1)
     {
         perror("smash error: stat failed");
         freeCmdArgs(args);
         return;
     }
-    bool file_exists = (stat_res == 0);
-    if(num_of_args != 2 || !file_exists)
-    {
-        cerr << "smash error: getfiletype: invalid arguments" << endl;
-        freeCmdArgs(args);
-        return;
-    }
+    //bool file_exists = (stat_res == 0);
     if(S_ISDIR(buffer.st_mode))
     {
         cout <<  args[1] <<"'s type is \"directory\" and takes up " << buffer.st_size << " bytes" << endl;
@@ -1209,27 +1218,27 @@ void ChmodCommand::execute()
         {
             is_fg = false;
         }
-        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg);
+        AlarmList::Alarm* cmd_alarm = new AlarmList::Alarm(cmdline,time(NULL), alarm_duration,getpid(), is_fg, true);
         smash.alarm_list.addAlarm(cmd_alarm);
     }
     int num_of_args = -1;
     char** args = getCmdArgs(cmdline,&num_of_args);
     struct stat buffer;
     int stat_res = stat(args[2], &buffer);
+    if(num_of_args != 3 || !checkIfNumber(args[1]))
+    {
+        cerr << "smash error: chmod: invalid arguments" << endl;
+        freeCmdArgs(args);
+        return;
+    }
     if(stat_res == -1)
     {
         cerr << "smash error: stat failed" << endl;
         freeCmdArgs(args);
         return;
     }
-    bool file_exists = (stat_res == 0);
-    if(num_of_args != 3 || !file_exists || !checkIfNumber(args[1]))
-    {
-        cerr << "smash error: chmod: invalid arguments" << endl;
-        freeCmdArgs(args);
-        return;
-    }
-    if(chmod(args[2], stoi(args[1])) == -1)
+    int mode = strtol(args[1], NULL, 8);
+    if(chmod(args[2], mode) == -1)
     {
         perror("smash error: chmod failed");
         freeCmdArgs(args);
@@ -1241,7 +1250,7 @@ void ChmodCommand::execute()
 AlarmList::AlarmList() : alarm_list()
 {}
 
-AlarmList::Alarm::Alarm(const char *cmd_line, time_t timestamp, time_t duration, pid_t pid, bool is_fg) : cmd_line(cmd_line), timestamp(timestamp), duration(duration), pid(pid), is_fg(is_fg)
+AlarmList::Alarm::Alarm(const char *cmd_line, time_t timestamp, time_t duration, pid_t pid, bool is_fg, bool is_builtin) : cmd_line(cmd_line), timestamp(timestamp), duration(duration), pid(pid), is_fg(is_fg), is_builtin(is_builtin)
 {}
 
 void AlarmList::addAlarm (AlarmList::Alarm* new_alarm)
@@ -1268,7 +1277,7 @@ void AlarmList::endAlarms()
         {
             //cout << "shell pid: " << smash.fg_pid << endl;
             //cout << "timed out pid: " << alarm.operator*()->pid << endl;
-            if(smash.jobs_list.getJobByPID(alarm.operator*()->pid) || alarm.operator*()->is_fg)
+            if((smash.jobs_list.getJobByPID(alarm.operator*()->pid) || alarm.operator*()->is_fg) && !alarm.operator*()->is_builtin)
             {
                 cout << "smash: timeout " << alarm.operator*()->duration <<" " << alarm.operator*()->cmd_line << " timed out!" << endl; //TODO
                 if (kill(alarm.operator*()->pid, SIGKILL) == -1) {

@@ -13,10 +13,26 @@ void ctrlZHandler(int sig_num) {
     {
         return;
     }
-    char* cmdline_copy = (char*) malloc(sizeof (cmdline_copy) * string(smash.fg_cmdline).length() + 1);
-    for (size_t i=0; i<string(smash.fg_cmdline).length() + 1; i++)
+    string t_string = "timeout " + to_string(smash.alarm_duration) + " ";
+    char* cmdline_copy;
+    if(smash.active_alarm)
     {
-        cmdline_copy[i] = smash.fg_cmdline[i];
+        cmdline_copy = (char*) malloc(sizeof (cmdline_copy) * (string(smash.fg_cmdline).length() + t_string.length()) + 1);
+        for (size_t i = 0; i < string(smash.fg_cmdline).length() + t_string.length() + 1; i++) {
+            if(i < t_string.length())
+            {
+                cmdline_copy[i] = t_string[i];
+            }
+            else {
+                cmdline_copy[i] = smash.fg_cmdline[i - t_string.length()];
+            }
+        }
+    }
+    else {
+        cmdline_copy = (char *) malloc(sizeof(cmdline_copy) * string(smash.fg_cmdline).length() + 1);
+        for (size_t i = 0; i < string(smash.fg_cmdline).length() + 1; i++) {
+            cmdline_copy[i] = smash.fg_cmdline[i];
+        }
     }
     smash.jobs_list.addJob(cmdline_copy,smash.fg_pid,smash.fg_job_id,true);
     if(kill(smash.fg_pid, SIGSTOP) == -1)
